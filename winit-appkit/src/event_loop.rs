@@ -39,6 +39,7 @@ use super::app_state::AppState;
 use super::cursor::CustomCursor;
 use super::event::dummy_event;
 use super::monitor;
+use super::url_handler::UrlHandler;
 use crate::ActivationPolicy;
 use crate::cursor::image_from_icon;
 use crate::dnd::{PasteboardTypeSpec, PasteboardWriter, dnd_actions_to_ns_drag_operation};
@@ -339,6 +340,10 @@ pub struct EventLoop {
     _did_finish_launching_observer: Retained<ProtocolObject<dyn NSObjectProtocol>>,
     _will_terminate_observer: Retained<ProtocolObject<dyn NSObjectProtocol>>,
 
+    // `NSAppleEventManager` does not retain its handlers, so unlike the observers above this one
+    // really would be dangling if we dropped it.
+    _url_handler: Retained<UrlHandler>,
+
     _tracing_observers: Option<(MainRunLoopObserver, MainRunLoopObserver)>,
     _before_waiting_observer: MainRunLoopObserver,
     _after_waiting_observer: MainRunLoopObserver,
@@ -411,6 +416,10 @@ impl EventLoop {
             },
         );
 
+        // Registered before `NSApplication` starts running, which is what the Apple Event that
+        // launched us with a URL waits for.
+        let _url_handler = UrlHandler::register(mtm);
+
         let main_loop = MainRunLoop::get(mtm);
         let mode = unsafe { kCFRunLoopCommonModes }.unwrap();
 
@@ -450,6 +459,7 @@ impl EventLoop {
             window_target: ActiveEventLoop { app_state, mtm },
             _did_finish_launching_observer,
             _will_terminate_observer,
+            _url_handler,
             _tracing_observers,
             _before_waiting_observer,
             _after_waiting_observer,

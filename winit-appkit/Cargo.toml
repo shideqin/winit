@@ -93,6 +93,11 @@ objc2-foundation = { workspace = true, features = [
     "std",
     "block2",
     "objc2-core-foundation",
+    # `kAEGetURL` delivery, see `url_handler`. `objc2-core-services` is what makes the
+    # `AEEventClass` / `AEKeyword` arguments of those two methods exist at all.
+    "objc2-core-services",
+    "NSAppleEventDescriptor",
+    "NSAppleEventManager",
     "NSArray",
     "NSAttributedString",
     "NSData",
