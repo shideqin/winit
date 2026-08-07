@@ -49,4 +49,32 @@ pub trait ApplicationHandlerExtMacOS: ApplicationHandler {
         let _ = window_id;
         let _ = action;
     }
+
+    /// The application was asked to open a URL with one of the schemes it declares.
+    ///
+    /// The application must be bundled and must list the scheme in its `Info.plist` under
+    /// `CFBundleURLTypes`; the system routes nothing otherwise.
+    ///
+    /// This reads the [`kAEGetURL`] Apple Event rather than `application:openURLs:`, so that the
+    /// [`NSApplicationDelegate`] slot stays free for the application to fill (see the `winit-appkit`
+    /// crate documentation). Both deliver the same URLs.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// impl ApplicationHandlerExtMacOS for App {
+    ///     fn received_url(&mut self, event_loop: &dyn ActiveEventLoop, url: String) {
+    ///         self.open(&url);
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// [`kAEGetURL`]: https://developer.apple.com/documentation/coreservices/kaegeturl
+    /// [`NSApplicationDelegate`]: https://developer.apple.com/documentation/appkit/nsapplicationdelegate?language=objc
+    #[doc(alias = "kAEGetURL")]
+    #[doc(alias = "application:openURLs:")]
+    fn received_url(&mut self, event_loop: &dyn ActiveEventLoop, url: String) {
+        let _ = event_loop;
+        let _ = url;
+    }
 }
