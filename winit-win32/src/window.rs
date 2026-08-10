@@ -10,7 +10,7 @@ use std::{io, panic, ptr};
 use dpi::{PhysicalInsets, PhysicalPosition, PhysicalSize, Position, Size};
 use tracing::warn;
 use windows_sys::Win32::Foundation::{
-    HWND, LPARAM, OLE_E_WRONGCOMPOBJ, POINT, POINTS, RECT, RPC_E_CHANGED_MODE, S_OK, WPARAM,
+    HWND, LPARAM, OLE_E_WRONGCOMPOBJ, POINT, RECT, RPC_E_CHANGED_MODE, S_OK, WPARAM,
 };
 use windows_sys::Win32::Graphics::Dwm::{
     DWM_BB_BLURREGION, DWM_BB_ENABLE, DWM_BLURBEHIND, DWM_SYSTEMBACKDROP_TYPE,
@@ -257,13 +257,20 @@ impl Window {
                 unsafe { GetCursorPos(&mut pos) };
                 pos
             };
-            let points = POINTS { x: points.x as i16, y: points.y as i16 };
+            // The synthetic NCLBUTTONDOWN's LPARAM must carry the
+            // cursor's packed screen coordinates, as a real one would.
+            // Posting the *address* of a stack POINTS instead made
+            // DefWindowProc read garbage bits as the move/size anchor,
+            // so the modal loop could fail to start (or jump the
+            // window off-screen on the first move).
+            let lparam =
+                ((((points.y as u32) & 0xFFFF) << 16) | ((points.x as u32) & 0xFFFF)) as LPARAM;
 
             // ReleaseCapture needs to execute on the main thread
             unsafe { ReleaseCapture() };
 
             unsafe {
-                PostMessageW(window.hwnd(), WM_NCLBUTTONDOWN, wparam, &points as *const _ as LPARAM)
+                PostMessageW(window.hwnd(), WM_NCLBUTTONDOWN, wparam, lparam)
             };
         });
     }
