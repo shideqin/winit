@@ -264,14 +264,12 @@ impl Window {
             // so the modal loop could fail to start (or jump the
             // window off-screen on the first move).
             let lparam =
-                ((((points.y as u32) & 0xFFFF) << 16) | ((points.x as u32) & 0xFFFF)) as LPARAM;
+                ((((points.y as u32) & 0xffff) << 16) | ((points.x as u32) & 0xffff)) as LPARAM;
 
             // ReleaseCapture needs to execute on the main thread
             unsafe { ReleaseCapture() };
 
-            unsafe {
-                PostMessageW(window.hwnd(), WM_NCLBUTTONDOWN, wparam, lparam)
-            };
+            unsafe { PostMessageW(window.hwnd(), WM_NCLBUTTONDOWN, wparam, lparam) };
         });
     }
 
