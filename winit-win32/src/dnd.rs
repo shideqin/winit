@@ -35,6 +35,10 @@ use windows_sys::Win32::System::SystemServices::{
 };
 use windows_sys::Win32::UI::Shell::{DROPFILES, DragQueryFileW, HDROP};
 use windows_sys::core::{BOOL, GUID, HRESULT, IID_IUnknown};
+
+/// `oleidl.h` — the interface a drop target exposes; a cross-process
+/// `QueryInterface` can legitimately ask for it alongside `IUnknown`.
+const IID_IDropTarget: GUID = GUID::from_u128(0x00000122_0000_0000_c000_000000000046);
 use winit_core::data_transfer::{
     DataTransfer, DataTransferId, DataTransferSend, SendData, TransferType, TypeHint, TypedData,
 };
@@ -343,15 +347,25 @@ impl FileDropHandler {
 
     // Implement IUnknown
     unsafe extern "system" fn QueryInterface(
-        _this: *mut IUnknown,
-        _riid: *const GUID,
-        _ppvObject: *mut *mut c_void,
+        this: *mut IUnknown,
+        riid: *const GUID,
+        ppvObject: *mut *mut c_void,
     ) -> HRESULT {
-        // This function doesn't appear to be required for an `IDropTarget`.
-        // An implementation would be nice however.
-        // Can't use `unimplemented` here as it's invalid to panic over an FFI boundary.
-        tracing::warn!("`QueryInterface` called, but it was unimplemented");
-        E_FAIL
+        let riid = unsafe { &*riid };
+        // OLE queries the drop target across the process boundary before
+        // dispatching any `DragEnter` / `DragOver` / `Drop` call; answering
+        // `E_FAIL` makes it conclude the target is invalid and the drag
+        // silently never reaches this window. Serve `IUnknown` and
+        // `IDropTarget` - the two IIDs ole32 can legitimately ask for - and
+        // refuse the rest.
+        if guids_eq(riid, &IID_IUnknown) || guids_eq(riid, &IID_IDropTarget) {
+            unsafe { *ppvObject = this as *mut c_void };
+            Self::AddRef(this);
+            S_OK
+        } else {
+            unsafe { *ppvObject = std::ptr::null_mut() };
+            E_NOINTERFACE
+        }
     }
 
     unsafe extern "system" fn AddRef(this: *mut IUnknown) -> u32 {
