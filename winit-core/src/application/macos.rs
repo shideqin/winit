@@ -56,8 +56,8 @@ pub trait ApplicationHandlerExtMacOS: ApplicationHandler {
     /// `CFBundleURLTypes`; the system routes nothing otherwise.
     ///
     /// This reads the [`kAEGetURL`] Apple Event rather than `application:openURLs:`, so that the
-    /// [`NSApplicationDelegate`] slot stays free for the application to fill (see the `winit-appkit`
-    /// crate documentation). Both deliver the same URLs.
+    /// [`NSApplicationDelegate`] slot stays free for the application to fill (see the
+    /// `winit-appkit` crate documentation). Both deliver the same URLs.
     ///
     /// # Example
     ///

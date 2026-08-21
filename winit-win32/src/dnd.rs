@@ -1,3 +1,5 @@
+#![allow(non_upper_case_globals)]
+
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString, c_void};
@@ -360,7 +362,7 @@ impl FileDropHandler {
         // refuse the rest.
         if guids_eq(riid, &IID_IUnknown) || guids_eq(riid, &IID_IDropTarget) {
             unsafe { *ppvObject = this as *mut c_void };
-            Self::AddRef(this);
+            unsafe { Self::AddRef(this) };
             S_OK
         } else {
             unsafe { *ppvObject = std::ptr::null_mut() };
